@@ -1,0 +1,122 @@
+﻿@page "/students"
+
+@inject HttpClient Http
+
+<PageTitle>My Students</PageTitle>
+
+<h1>My Students</h1>
+ 
+@if (students == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div>
+       <label><input type="checkbox" @bind="resetFilter" /> Reset Filter</label>
+    </div>
+
+    <div class="page-size-chooser">
+        Items per page:
+        <select @bind="@pagination.ItemsPerPage">
+            <option>5</option>
+            <option>10</option>
+            <option>20</option>
+            <option>50</option>
+        </select>
+    </div>
+    <br />
+    <div>
+        <QuickGrid Items="@filteredItems" Pagination="@pagination" >
+
+            <PropertyColumn Property="@(p => p.StudentId)" Sortable="true" Class="country-name">
+                <ColumnOptions>
+                    <div class="search-box">
+                        <input type="search" autofocus @bind="idFilter" @bind:event="oninput" placeholder="Id..." />
+                    </div>
+                </ColumnOptions>
+            </PropertyColumn>
+
+            <PropertyColumn Property="@(p => p.FirstName)" Sortable="true" Class="country-name">
+                <ColumnOptions>
+                    <div class="search-box">
+                        <input type="search" autofocus @bind="nameFilter" @bind:event="oninput" placeholder="First name..." />
+                    </div>
+                </ColumnOptions>
+            </PropertyColumn>
+
+            <PropertyColumn Property="@(p => p.LastName)" Sortable="true" Class="country-name">
+                <ColumnOptions>
+                    <div class="search-box">
+                        <input type="search" autofocus @bind="lastNameFilter" @bind:event="oninput" placeholder="First name..." />
+                    </div>
+                </ColumnOptions>
+            </PropertyColumn>
+            
+            <PropertyColumn Property="@(p => p.School)" Sortable="true" Class="country-name">
+                <ColumnOptions>
+                    <div class="search-box">
+                        <input type="search" autofocus @bind="schoolFilter" @bind:event="oninput" placeholder="School..." />
+                    </div>
+                </ColumnOptions>
+            </PropertyColumn>
+            
+            <TemplateColumn Title="Actions">
+                <a class="btn btn-success btn-sm" href="/updel/@context.StudentId/edit">Edit</a>
+                <a class="btn btn-danger btn-sm" href="/updel/@context.StudentId/del">Delete</a>
+            </TemplateColumn>
+        </QuickGrid>
+    </div>
+    <Paginator State="@pagination" />
+  
+}
+
+@code {
+    private Student[]? students;
+    IQueryable<Student>? itemsQueryable;
+    string nameFilter = string.Empty;
+    string schoolFilter = string.Empty;
+    string idFilter = string.Empty;
+    string lastNameFilter = string.Empty;
+    PaginationState pagination = new PaginationState { ItemsPerPage = 10 };
+    bool resetFilter = false;
+    IQueryable<Student>? filteredItems
+    {
+        get
+        {
+            if(resetFilter){
+                return itemsQueryable;
+            }
+            
+            var result = itemsQueryable;
+
+            //Id will be the first filter
+            if (!string.IsNullOrEmpty(idFilter))
+            {
+                return  result?.Where(x =>  x.StudentId.ToString()!.Contains(idFilter.ToString(), StringComparison.CurrentCultureIgnoreCase));
+            }
+            
+            //First Name Last Name and School can be combined
+            if (!string.IsNullOrEmpty(nameFilter))
+            {
+                result =  result?.Where(x =>  x.FirstName!.Contains(nameFilter, StringComparison.CurrentCultureIgnoreCase));
+            }
+            if (!string.IsNullOrEmpty(schoolFilter))
+            {
+                result =  result?.Where(x =>  x.School!.Contains(schoolFilter, StringComparison.CurrentCultureIgnoreCase));
+            }
+            if (!string.IsNullOrEmpty(lastNameFilter))
+            {
+                result =  result?.Where(x =>  x.LastName!.Contains(lastNameFilter, StringComparison.CurrentCultureIgnoreCase));
+            }
+        
+            return result;
+        }
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        string URL = $"{Constants.SchoolAPIBase}students";
+        students = await Http.GetFromJsonAsync<Student[]>(URL);
+        itemsQueryable = students!.AsQueryable();
+    }
+}
